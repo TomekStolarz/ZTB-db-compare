@@ -1,6 +1,14 @@
 version: '3'
 
-mysql:
+services:
+
+  db:
+    image: postgres
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: example
+
+  mysql:
     container_name: sqlserver
     image: mysql:latest
     ports:
@@ -11,3 +19,35 @@ mysql:
         MYSQL_ROOT_PASSWORD: root
         MYSQL_USER: dbuser
         MYSQL_PASSWORD: dbpass
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    environment:
+      - MONGO_DATABASE="tablook"
+    ports:
+      - 27017:27017
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+    depends_on:
+      - mongo
+    ports:
+      - 8081:8081
+  
+  cassandra:
+    image: cassandra:4.0
+    ports:
+      - 9042:9042
+    volumes:
+      - ~/apps/cassandra:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cloudinfra
