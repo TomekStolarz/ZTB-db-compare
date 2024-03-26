@@ -1,4 +1,3 @@
-
 const express = require("express");
 const { get10Results } = require("./controller");
 

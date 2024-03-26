@@ -6,12 +6,18 @@ services:
     image: postgres
     environment:
       POSTGRES_PASSWORD: example
+    ports:
+      - "5432:5432"
 
   mysql:
     container_name: sqlserver
     build:
       context: .
       dockerfile: docker/sqldump/Dockerfile
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3306:3306"
   adminer:
     image: adminer
     ports:
@@ -35,7 +41,7 @@ services:
       - mongo
     ports:
       - 8081:8081
-  
+
   cassandra:
     image: cassandra:4.0
     ports:
