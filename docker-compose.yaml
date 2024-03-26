@@ -6,6 +6,8 @@ services:
     image: postgres
     environment:
       POSTGRES_PASSWORD: example
+    ports:
+      - "5432:5432"
 
   mysql:
     container_name: sqlserver
@@ -35,7 +37,7 @@ services:
       - mongo
     ports:
       - 8081:8081
-  
+
   cassandra:
     image: cassandra:4.0
     ports:
