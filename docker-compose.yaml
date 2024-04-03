@@ -47,6 +47,20 @@ services:
     ports:
       - 9042:9042
     volumes:
-      - ~/apps/cassandra:/var/lib/cassandra
+      - db_data:/var/lib/csql
     environment:
       - CASSANDRA_CLUSTER_NAME=cloudinfra
+  cassandra-web:
+    image: delermando/docker-cassandra-web:v0.4.0
+    ports: 
+      - 3000:3000
+    environment:
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_HOST_IP=172.23.0.6
+volumes:
+  db_data:
+    driver: local # Define the driver and options under the volume name
+    driver_opts:
+      type: none
+      device: /airportdb
+      o: bind

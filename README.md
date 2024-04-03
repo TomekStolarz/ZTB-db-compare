@@ -1,5 +1,10 @@
 # ZTB
 
+## Cassandra seed
+Download and unpack zip with csv to airportdb folder in main repo directory
+Copy file airport.cql into it
+run ```cd var/lib/csql && cqlsh -f airport.cql``` in docker terminal on cassandra container 
+
 
 ## Setup & Installation
 
