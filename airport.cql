@@ -99,8 +99,8 @@ CREATE TABLE flight (
   flightno varchar,
   from smallint,
   to smallint,
-  departure datetime,
-  arrival datetime,
+  departure date,
+  arrival date,
   airline_id smallint,
   airplane_id int
 ) ;
@@ -110,7 +110,7 @@ FROM 'flight.csv' WITH DELIMITER = ';';
 
 CREATE TABLE flight_log (
   flight_log_id int PRIMARY KEY,
-  log_date datetime,
+  log_date date,
   user varchar,
   flight_id int,
   flightno_old varchar,
@@ -119,10 +119,10 @@ CREATE TABLE flight_log (
   to_old smallint,
   from_new smallint,
   to_new smallint,
-  departure_old datetime,
-  arrival_old datetime,
-  departure_new datetime,
-  arrival_new datetime,
+  departure_old date,
+  arrival_old date,
+  departure_new date,
+  arrival_new date,
   airplane_id_old int,
   airplane_id_new int,
   airline_id_old smallint,
