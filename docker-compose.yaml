@@ -1,5 +1,11 @@
 version: '3.8'
 
+networks:
+  cass:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
 services:
 
   db:
@@ -48,15 +54,22 @@ services:
       - 9042:9042
     volumes:
       - db_data:/var/lib/csql
+    networks:
+      cass:
+        ipv4_address: 172.20.0.5
     environment:
       - CASSANDRA_CLUSTER_NAME=cloudinfra
   cassandra-web:
+    depends_on:
+      - cassandra
     image: delermando/docker-cassandra-web:v0.4.0
+    environment:
+      - CASSANDRA_HOST_IP=172.20.0.5
+    networks:
+      cass:
+        ipv4_address: 172.20.0.6
     ports: 
       - 3000:3000
-    environment:
-      - CASSANDRA_PORT=9042
-      - CASSANDRA_HOST_IP=172.23.0.6
 volumes:
   db_data:
     driver: local # Define the driver and options under the volume name
