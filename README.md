@@ -1,5 +1,11 @@
 # ZTB
 
+##mysql seed
+open terminal under mysql container
+run apt-get install -y mysql-server mysql-shell
+run sql_seed.sh from docker entrypoint container
+
+
 ## Cassandra seed
 Download and unpack zip with csv to airportdb folder in main repo directory
 Copy file airport.cql into it
