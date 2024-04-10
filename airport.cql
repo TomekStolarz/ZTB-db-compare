@@ -43,12 +43,12 @@ COPY airport (airport_id, iata, icao, name)
 FROM 'airport.csv' WITH DELIMITER = ';';
 
 CREATE TABLE airport_geo (
-  airport_id smallint,
+  airport_id smallint PRIMARY KEY,
   name varchar,
   city varchar,
   country varchar,
   latitude decimal,
-  longitude decimal,
+  longitude decimal
 ) ;
 
 COPY airport_geo (airport_id, name, city, country, latitude, longitude)  
