@@ -97,20 +97,20 @@ FROM 'employee.csv' WITH DELIMITER = ';';
 CREATE TABLE flight (
   flight_id int PRIMARY KEY,
   flightno varchar,
-  from smallint,
-  to smallint,
-  departure date,
-  arrival date,
+  from_ smallint,
+  to_ smallint,
+  departure timestamp,
+  arrival timestamp,
   airline_id smallint,
   airplane_id int
 ) ;
 
-COPY flight (flight_id, flightno, from, to, departure, arrival, airline_id, airplane_id)  
+COPY flight (flight_id, flightno, from_, to_, departure, arrival, airline_id, airplane_id)  
 FROM 'flight.csv' WITH DELIMITER = ';';
 
 CREATE TABLE flight_log (
   flight_log_id int PRIMARY KEY,
-  log_date date,
+  log_date timestamp,
   user varchar,
   flight_id int,
   flightno_old varchar,
@@ -119,10 +119,10 @@ CREATE TABLE flight_log (
   to_old smallint,
   from_new smallint,
   to_new smallint,
-  departure_old date,
-  arrival_old date,
-  departure_new date,
-  arrival_new date,
+  departure_old timestamp,
+  arrival_old timestamp,
+  departure_new timestamp,
+  arrival_new timestamp,
   airplane_id_old int,
   airplane_id_new int,
   airline_id_old smallint,
@@ -130,14 +130,14 @@ CREATE TABLE flight_log (
   comment varchar
 ) ;
 
-COPY flight_log (flight_log_id, log_date, user, flight_id, flightno_old, flightno_new, from_old, to_old, from_new, to_new, departure_old, arrival_old, departure_new, arrival_new, password, airplane_id_old, airplane_id_new, airline_id_old, airline_id_new, comment)  
+COPY flight_log (flight_log_id, log_date, user, flight_id, flightno_old, flightno_new, from_old, to_old, from_new, to_new, departure_old, arrival_old, departure_new, arrival_new, airplane_id_old, airplane_id_new, airline_id_old, airline_id_new, comment)  
 FROM 'flight_log.csv' WITH DELIMITER = ';';
 
 
 CREATE TABLE flightschedule (
-  flightno varchar PRIMARY KEY ,
-  from smallint,
-  to smallint,
+  flightno varchar PRIMARY KEY,
+  from_ smallint,
+  to_ smallint,
   departure time,
   arrival time,
   airline_id smallint,
@@ -147,10 +147,10 @@ CREATE TABLE flightschedule (
   thursday tinyint,
   friday tinyint,
   saturday tinyint,
-  sunday tinyint,
+  sunday tinyint
 ) ;
 
-COPY flightschedule (flightno, from, to, departure, arrival, airline_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday)  
+COPY flightschedule (flightno, from_, to_, departure, arrival, airline_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday)  
 FROM 'flightschedule.csv' WITH DELIMITER = ';';
 
 
@@ -159,7 +159,7 @@ CREATE TABLE passenger (
   passportno varchar,
   firstname varchar,
   lastname varchar
-) 
+) ;
 
 COPY passenger (passenger_id, passportno, firstname, lastname)  
 FROM 'passenger.csv' WITH DELIMITER = ';';
