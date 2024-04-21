@@ -1,12 +1,12 @@
-const mysql = require('mysql2/promise'); // Using mysql2 with promise support
+const { Pool } = require('pg');
 
-
-const connectionConfig = {
+const pool = new Pool({
+  user: 'postgres',
   host: 'localhost',
-  user: 'root',
   database: 'test',
-  password: '"root"'
-};
+  password: 'example',
+  port: 5432,
+});
 
 const queries = [
   `
@@ -122,22 +122,21 @@ const updates = [
 ]
 
 const get10Results = async (req, res) => {
-  let connection;
-
+  let client;
   try {
-    connection = await mysql.createConnection(connectionConfig);
+    client = await pool.connect();
     console.log("Connected successfully to server");
 
-    const [rows, fields] = await connection.execute('SELECT * FROM testtable LIMIT 10');
-    console.log('Found documents:', rows);
+    const result = await client.query('SELECT * FROM testtable LIMIT 10');
+    console.log('Found rows:', result.rows);
 
-    res.status(200).send(rows);
+    res.status(200).send(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error connecting to MySQL");
+    res.status(500).send("Error connecting to PostgreSQL");
   } finally {
-    if (connection) {
-      await connection.end();
+    if (client) {
+      client.release();
     }
   }
 };
