@@ -1,0 +1,11 @@
+:host {
+    display: flex;
+    padding:24px;  
+    flex-basis: 30%;  
+}
+.graph-form{
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    flex-direction: column;
+}
