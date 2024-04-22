@@ -39,6 +39,6 @@ export class DbFormComponent {
     if (this.graphForm.invalid) {
       return;
     }
-    this.dataService.addGraph(this.graphForm.getRawValue());
+    this.dataService.getGraphData(this.graphForm.getRawValue()).subscribe();
   }
 }

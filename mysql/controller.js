@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise'); // Using mysql2 with promise support
-
+const { getTableIndex, getRandomIndex } = require('../const');
 
 const connectionConfig = {
   host: 'localhost',
@@ -119,7 +119,13 @@ const updates = [
   SET emailaddress = 'bob@example.com'
   WHERE firstname = 'Bob' AND lastname = 'Johnson';
   `
-]
+];
+
+const tableMap = {
+  'select': queries,
+  'insert': inserts,
+  'update': updates,
+}
 
 const get10Results = async (req, res) => {
   let connection;
@@ -142,4 +148,32 @@ const get10Results = async (req, res) => {
   }
 };
 
-module.exports = { get10Results };
+const getResults = async (req, res) => {
+  let connection;
+
+  try {
+    connection = await mysql.createConnection(connectionConfig);
+    const operationCount = req.body.count;
+    const level = req.body.level;
+    const type = req.body.type;
+    const queries = tableMap[type].slice(...getTableIndex(type, level));
+    const indexes = new Array({ length: operationCount }, (_, i) => getRandomIndex(0, queries.length));
+    const times = [];
+    for (let index of indexes) {
+      let start = new Date().getTime();
+      const [rows, ] = await connection.execute(querie[index]);
+      let end = new Date().getTime();
+      times.push(start - end);
+    }
+    res.status(200).send(times);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send([]);
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+module.exports = { get10Results, getResults };
