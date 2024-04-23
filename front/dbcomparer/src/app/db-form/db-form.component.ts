@@ -29,7 +29,7 @@ export class DbFormComponent {
   ]
 
   protected graphForm = this.fb.group({
-    count: [0, Validators.required],
+    count: [1, [Validators.required, Validators.min(1)]],
     db: [this.dbSelectData[0].key, Validators.required],
     type: [this.queryType[0].key, Validators.required],
     level: [this.queryLevel[0].key, Validators.required],

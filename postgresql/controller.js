@@ -8,80 +8,52 @@ const pool = new Pool({
   port: 5432,
 });
 
-const postgresQueries = [
+const queries = [
   `
-  SELECT f.flight_id, f.flightno, f.departure, f.arrival, 
-         a.airlinename AS airline_name, 
-         dep.name AS departure_airport, 
-         arr.name AS arrival_airport
+  SELECT a.airlinename, f.flightno, f.departure, f.arrival, ap.capacity
   FROM flight f
   JOIN airline a ON f.airline_id = a.airline_id
-  JOIN airport dep ON f."from" = dep.airport_id
-  JOIN airport arr ON f."to" = arr.airport_id;
+  JOIN airplane ap ON f.airplane_id = ap.airplane_id
+  WHERE ap.capacity > 200 LIMIT 1000;
   `,
   `
-  SELECT f.flight_id, f.flightno, f.departure, f.arrival, a.airlinename AS airline_name, 
-         (SELECT COUNT(*) FROM booking b WHERE b.flight_id = f.flight_id) AS total_bookings
-  FROM flight f
-  JOIN airline a ON f.airline_id = a.airline_id;
+  SELECT airline_id, AVG(TIMESTAMPDIFF(MINUTE, departure, arrival)) AS avg_duration_minutes
+  FROM flight
+  GROUP BY airline_id LIMIT 10000;
   `,
   `
-  SELECT a.airlinename AS airline_name, total_flights
-  FROM (
-    SELECT airline_id, COUNT(*) AS total_flights
-    FROM flight
-    GROUP BY airline_id
-  ) AS flights_per_airline
-  JOIN airline a ON a.airline_id = flights_per_airline.airline_id;
-  `,
-  `SELECT * FROM flight
-  INNER JOIN airplane ON flight.airplane_id = airplane.airplane_id
-  WHERE airplane.capacity < 150;
-  `,
-  `
-  SELECT f.flight_id, f.flightno, f.departure, f.arrival, a.airlinename AS airline_name, 
-         p.passportno, p.firstname, p.lastname
-  FROM flight f
-  JOIN airline a ON f.airline_id = a.airline_id
-  JOIN booking b ON f.flight_id = b.flight_id
-  JOIN passenger p ON b.passenger_id = p.passenger_id;
+  SELECT passenger.firstname, 
+       passenger.lastname, 
+       COUNT(b.booking_id) AS total_bookings
+FROM passenger
+INNER JOIN  (SELECT * FROM booking LIMIT 100000) b ON passenger.passenger_id = b.passenger_id
+WHERE b.flight_id IN (
+    SELECT flight_id FROM flight WHERE departure > '2015-05-10'
+)
+GROUP BY passenger.firstname, passenger.lastname
+ORDER BY total_bookings DESC;
   `,
   `
-  SELECT e.employee_id, e.firstname, e.lastname, e.department, 
-         COUNT(f.flight_id) AS total_flights_assigned
-  FROM employee e
-  LEFT JOIN flight f ON e.employee_id = f.airline_id
-  GROUP BY e.employee_id, e.firstname, e.lastname, e.department;
+  SELECT * 
+  FROM flight
+  WHERE flight.from = (
+      SELECT airport_id FROM airport WHERE iata = 'JFK'
+  ) LIMIT 50;
   `,
   `
-  SELECT e.firstname, e.lastname, COUNT(b.booking_id) AS total_bookings
-  FROM employee e
-  JOIN booking b ON e.employee_id = b.passenger_id
-  GROUP BY e.firstname, e.lastname;
+  SELECT p.firstname, p.lastname, COUNT(b.booking_id) AS total_bookings
+  FROM (SELECT * FROM booking LIMIT 100000) b
+  JOIN passenger p ON b.passenger_id = p.passenger_id
+  GROUP BY p.firstname, p.lastname;
   `,
   `
-  SELECT * FROM airport
-  WHERE country = 'Germany';
-  `,
-  `
-  SELECT * FROM employee
-  WHERE department = 'Management';
-  `,
-  `
-  SELECT * FROM passenger
-  WHERE firstname = 'John' AND lastname = 'Doe';
+  SELECT flightno, departure, arrival
+  FROM flight
+  WHERE DATEDIFF(arrival, departure) > 1;
   `
 ];
 
-const postgresInserts = [
-  `
-  INSERT INTO booking (flight_id, seat, passenger_id, price)
-  SELECT f.flight_id, 'A1', p.passenger_id, 200.00
-  FROM flight f
-  JOIN airline a ON f.airline_id = a.airline_id
-  JOIN passenger p ON a.base_airport = p.airport_id
-  LIMIT 1;
-  `,
+const inserts = [
   `
   INSERT INTO booking (flight_id, seat, passenger_id, price)
   VALUES (
@@ -92,12 +64,18 @@ const postgresInserts = [
   );
   `,
   `
-  INSERT INTO passenger (passportno, firstname, lastname)
-  VALUES ('XY123456', 'Bob', 'Johnson');
+  INSERT INTO airplane (capacity, type_id, airline_id)
+  VALUES (200, 1, 1);
+  `,
   `
-];
+  INSERT INTO airport (iata, icao, name)
+  VALUES ('FRA', 'EDDF', 'Frankfurt Airport');
+  `,
+  `INSERT INTO passenger (passportno, firstname, lastname)
+  VALUES ('XY123456', 'Bob', 'Johnson');`
+]
 
-const postgresUpdates = [
+const updates = [
   `
   UPDATE flight
   SET airplane_id = (
@@ -112,14 +90,27 @@ const postgresUpdates = [
   WHERE departure > NOW();
   `,
   `
+  UPDATE booking
+  SET price = price * 1.1
+  WHERE flight_id IN (
+    SELECT flight_id
+    FROM flight
+    WHERE airline_id = (
+      SELECT airline_id
+      FROM airline
+      WHERE iata = 'SP'
+    )
+  ) LIMIT 100000;
+  `,
+  `
   UPDATE flight
-  SET departure = departure + INTERVAL '1 HOUR'
-  WHERE flightno = 'XYZ456';
+  SET departure = DATE_ADD(departure, INTERVAL 1 HOUR)
+  WHERE departure > NOW();
   `,
   `
   UPDATE passenger
-  SET emailaddress = 'bob@example.com'
-  WHERE firstname = 'Bob' AND lastname = 'Johnson';
+  SET emailaddress = CONCAT(firstname, '.', lastname, '@example.com')
+  WHERE emailaddress IS NULL;
   `
 ];
 

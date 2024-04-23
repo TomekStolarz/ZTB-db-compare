@@ -12,6 +12,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { ChartsComponent } from './charts/charts.component';
 import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
+import { AvaragePipe } from './avarage.pipe';
 
 
 @NgModule({
@@ -30,7 +31,8 @@ import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
     ReactiveFormsModule,
     FormsModule,
     HttpClientModule,
-    CanvasJSAngularChartsModule
+    CanvasJSAngularChartsModule,
+    AvaragePipe
   ],
   providers: [],
   bootstrap: [AppComponent]

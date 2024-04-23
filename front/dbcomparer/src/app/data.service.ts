@@ -11,14 +11,17 @@ export class DataService {
   private graphs: ChartData[] = [];
   private graphs$ = new BehaviorSubject<ChartData[]>(this.graphs);
   public graphsData: Observable<ChartData[]> = this.graphs$.asObservable();
-  private apiUrl = 'localhost:5000/api';
+  private apiUrl = 'http://localhost:5000/api';
 
   private addGraph(graph: ChartData) {
+    if (!graph.points.length) {
+      return;
+    }
     this.graphs.push(graph);
     this.graphs$.next(this.graphs);
   }
 
-  private getGraphData(formData: ChartFormData): Observable<ChartData>
+  public getGraphData(formData: ChartFormData): Observable<ChartData>
   {
     return this.httpClient.post<number[]>(`${this.apiUrl}/${formData.db}`, formData).pipe(
       map((times) => {
@@ -27,7 +30,7 @@ export class DataService {
           points: times.map((time) => ({ y: time }))
         }
       }),
-      tap(this.addGraph)
+      tap(this.addGraph.bind(this))
     )
   }
 }

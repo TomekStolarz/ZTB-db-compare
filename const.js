@@ -1,5 +1,5 @@
 const MEDIUM_QUERY_INDEX = 3;
-const MEDIUM_UPDATE_INSERT_INDEX = 1;
+const MEDIUM_UPDATE_INSERT_INDEX = 2;
 
 const getTableIndex = (type, level) => {
     if (type === 'select') {
@@ -14,8 +14,8 @@ const getTableIndex = (type, level) => {
     return [0, MEDIUM_UPDATE_INSERT_INDEX]
 }
 
-function getRandomIndex(min, max) {
-    return Math.random() * (max - min) + min;
+const getRandomIndex = (min, max) => {
+    return Math.floor(Math.random() * (max - min) + min);
   }
 
 module.exports = {getTableIndex, getRandomIndex}
