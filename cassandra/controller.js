@@ -87,7 +87,7 @@ const updates = [
     )
     LIMIT 1
   )
-  WHERE departure > NOW();
+  WHERE departure > '2015-05-10';
   `,
   `
   UPDATE booking
@@ -105,10 +105,10 @@ const updates = [
   `
   UPDATE flight
   SET departure = DATE_ADD(departure, INTERVAL 1 HOUR)
-  WHERE departure > NOW();
+  WHERE departure > '2015-05-10';
   `,
   `
-  UPDATE passenger
+  UPDATE employee
   SET emailaddress = CONCAT(firstname, '.', lastname, '@example.com')
   WHERE emailaddress IS NULL;
   `
