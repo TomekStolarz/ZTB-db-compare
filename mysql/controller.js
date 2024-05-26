@@ -120,27 +120,6 @@ const tableMap = {
   'update': updates,
 }
 
-const get10Results = async (req, res) => {
-  let connection;
-
-  try {
-    connection = await mysql.createConnection(connectionConfig);
-    console.log("Connected successfully to server");
-
-    await connection.execute(queries[queries.length - 1]);
-    console.log('Found documents:', rows);
-
-    res.status(200).send(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error connecting to MySQL");
-  } finally {
-    if (connection) {
-      await connection.end();
-    }
-  }
-};
-
 const getResults = async (req, res) => {
   let connection;
 
@@ -155,7 +134,7 @@ const getResults = async (req, res) => {
     const times = [];
     for (let index of indexes) {
       let start = new Date().getTime();
-      
+
       await connection.execute(queries[index]);
       let end = new Date().getTime();
       times.push(end - start);
@@ -172,4 +151,4 @@ const getResults = async (req, res) => {
   }
 }
 
-module.exports = { get10Results, getResults };
+module.exports = { getResults };

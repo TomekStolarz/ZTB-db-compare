@@ -1,8 +1,8 @@
 const express = require("express");
-const { get10Results } = require("./controller");
+const { getResults } = require("./controller");
 
 const mongoRouter = express.Router();
 
-mongoRouter.get("/", get10Results);
+mongoRouter.post("/", getResults);
 
 module.exports = { mongoRouter };

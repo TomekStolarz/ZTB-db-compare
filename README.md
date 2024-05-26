@@ -1,7 +1,11 @@
 # ZTB
 
-##mysql seed
+## mysql seed
 open terminal under mysql container
+RUN apt-get install -y wget lsb-release gnupg
+RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.30-1_all.deb
+RUN DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.30-1_all.deb
+RUN apt-get update
 run apt-get install -y mysql-server mysql-shell
 run sql_seed.sh from docker entrypoint container
 
@@ -10,6 +14,9 @@ run sql_seed.sh from docker entrypoint container
 Download and unpack zip with csv to airportdb folder in main repo directory
 Copy file airport.cql into it
 run ```cd var/lib/csql && cqlsh -f airport.cql``` in docker terminal on cassandra container 
+ 
+
+## mongo 
 
 
 ## Setup & Installation

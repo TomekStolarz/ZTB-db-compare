@@ -16,6 +16,6 @@ const getTableIndex = (type, level) => {
 
 const getRandomIndex = (min, max) => {
     return Math.floor(Math.random() * (max - min) + min);
-  }
+}
 
-module.exports = {getTableIndex, getRandomIndex}
+module.exports = { getTableIndex, getRandomIndex }

@@ -1,11 +1,10 @@
-const { Pool } = require('pg');
+const cassandra = require('cassandra-driver');
+const { getTableIndex, getRandomIndex } = require('../const');
 
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'test',
-  password: 'example',
-  port: 5432,
+const client = new cassandra.Client({
+  contactPoints: ['localhost'],
+  localDataCenter: 'datacenter1',
+  keyspace: 'airportdb'
 });
 
 const queries = [
@@ -14,54 +13,53 @@ const queries = [
   FROM flight f
   JOIN airline a ON f.airline_id = a.airline_id
   JOIN airplane ap ON f.airplane_id = ap.airplane_id
-  WHERE ap.capacity > 200 LIMIT 1000;
+  WHERE ap.capacity > 200 ALLOW FILTERING;
   `,
   `
-  SELECT airline_id, AVG(TIMESTAMPDIFF(MINUTE, departure, arrival)) AS avg_duration_minutes
-  FROM flight
-  GROUP BY airline_id LIMIT 10000;
+  SELECT airline_id, AVG(duration) AS avg_duration_minutes
+  FROM (
+      SELECT airline_id, (arrival - departure) AS duration
+      FROM flight
+  )
+  GROUP BY airline_id;
   `,
   `
-  SELECT passenger.firstname, 
-       passenger.lastname, 
-       COUNT(b.booking_id) AS total_bookings
-FROM passenger
-INNER JOIN  (SELECT * FROM booking LIMIT 100000) b ON passenger.passenger_id = b.passenger_id
-WHERE b.flight_id IN (
-    SELECT flight_id FROM flight WHERE departure > '2015-05-10'
-)
-GROUP BY passenger.firstname, passenger.lastname
-ORDER BY total_bookings DESC;
+  SELECT p.firstname, p.lastname, COUNT(b.booking_id) AS total_bookings
+  FROM passenger p
+  JOIN booking b ON p.passenger_id = b.passenger_id
+  WHERE b.flight_id IN (
+      SELECT flight_id FROM flight WHERE departure > '2015-05-10'
+  )
+  GROUP BY p.firstname, p.lastname
+  ALLOW FILTERING;
   `,
   `
   SELECT * 
   FROM flight
-  WHERE flight.from = (
+  WHERE "from" = (
       SELECT airport_id FROM airport WHERE iata = 'JFK'
-  ) LIMIT 50;
+  ) ALLOW FILTERING;
   `,
   `
   SELECT p.firstname, p.lastname, COUNT(b.booking_id) AS total_bookings
-  FROM (SELECT * FROM booking LIMIT 100000) b
+  FROM booking b
   JOIN passenger p ON b.passenger_id = p.passenger_id
   GROUP BY p.firstname, p.lastname;
   `,
   `
   SELECT flightno, departure, arrival
   FROM flight
-  WHERE DATEDIFF(arrival, departure) > 1;
+  WHERE (arrival - departure) > 86400000 ALLOW FILTERING;
   `
 ];
 
 const inserts = [
   `
   INSERT INTO booking (flight_id, seat, passenger_id, price)
-  VALUES (
-    (SELECT flight_id FROM flight WHERE flightno = 'ABC123'),
-    'B3',
-    (SELECT passenger_id FROM passenger WHERE firstname = 'Alice' AND lastname = 'Smith'),
-    250.00
-  );
+  VALUES ((SELECT flight_id FROM flight WHERE flightno = 'ABC123' LIMIT 1),
+          'B3',
+          (SELECT passenger_id FROM passenger WHERE firstname = 'Alice' AND lastname = 'Smith' LIMIT 1),
+          250.00);
   `,
   `
   INSERT INTO airplane (capacity, type_id, airline_id)
@@ -73,66 +71,68 @@ const inserts = [
   `,
   `INSERT INTO passenger (passportno, firstname, lastname)
   VALUES ('XY123456', 'Bob', 'Johnson');`
-]
+];
 
 const updates = [
   `
   UPDATE flight
   SET airplane_id = (
-    SELECT airplane_id
-    FROM airplane
-    WHERE capacity >= (
-      SELECT MAX(capacity)
+      SELECT airplane_id
       FROM airplane
-    )
-    LIMIT 1
+      WHERE capacity = (SELECT MAX(capacity) FROM airplane)
+      LIMIT 1
   )
-  WHERE departure > '2015-05-10';
+  WHERE departure > '2015-05-10' ALLOW FILTERING;
   `,
   `
   UPDATE booking
   SET price = price * 1.1
   WHERE flight_id IN (
-    SELECT flight_id
-    FROM flight
-    WHERE airline_id = (
-      SELECT airline_id
-      FROM airline
-      WHERE iata = 'SP'
-    )
-  ) LIMIT 100000;
+      SELECT flight_id
+      FROM flight
+      WHERE airline_id = (SELECT airline_id FROM airline WHERE iata = 'SP' LIMIT 1)
+  );
   `,
   `
   UPDATE flight
-  SET departure = DATE_ADD(departure, INTERVAL 1 HOUR)
-  WHERE departure > '2015-05-10';
+  SET departure = departure + 3600000
+  WHERE departure > '2015-05-10' ALLOW FILTERING;
   `,
   `
   UPDATE employee
-  SET emailaddress = CONCAT(firstname, '.', lastname, '@example.com')
+  SET emailaddress = firstname || '.' || lastname || '@example.com'
   WHERE emailaddress IS NULL;
   `
 ];
 
+const tableMap = {
+  'select': queries,
+  'insert': inserts,
+  'update': updates,
+};
 
-const get10Results = async (req, res) => {
-  let client;
+const getResults = async (req, res) => {
   try {
-    client = await pool.connect();
-    console.log("Connected successfully to server");
+    const operationCount = req.body.count;
+    const level = req.body.level;
+    const type = req.body.type;
+    const queries = tableMap[type].slice(...getTableIndex(type, level));
 
-    const result = await client.query('SELECT * FROM testtable LIMIT 10');
-    console.log('Found rows:', result.rows);
+    const indexes = Array.from({ length: operationCount }, (_, i) => getRandomIndex(0, queries.length));
+    const times = [];
+    for (let index of indexes) {
+      let start = new Date().getTime();
 
-    res.status(200).send(result.rows);
+      await client.execute(queries[index]);
+      let end = new Date().getTime();
+      times.push(end - start);
+    }
+    console.log(times);
+    res.status(200).send(times);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Error connecting to PostgreSQL");
-  } finally {
-    if (client) {
-      client.release();
-    }
+    res.status(500).send([]);
   }
 };
 
-module.exports = { get10Results };
+module.exports = { getResults };

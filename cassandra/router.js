@@ -1,8 +1,8 @@
 const express = require("express");
-const { get10Results } = require("./controller");
+const { getResults } = require("./controller");
 
-const postgresRouter = express.Router();
+const cassandraRouter = express.Router();
 
-postgresRouter.get("/", get10Results);
+cassandraRouter.post("/", getResults);
 
-module.exports = { postgresRouter };
+module.exports = { cassandraRouter };
