@@ -7,21 +7,9 @@ const clientOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 
 const queries = [
   async (db) => {
-    // Simple query: Select flights with capacity greater than 200
-    return db.collection('flight').find({ capacity: { $gt: 200 } }).limit(1000).toArray();
+    // Simple query: Select all flights
+    return db.collection('flight').find({}, { projection: { flightno: 1, departure: 1, arrival: 1 } }).toArray();
   },
-  async (db) => {
-    // Advanced query: Aggregate to find the average flight duration by airline
-    return db.collection('flight').aggregate([
-      {
-        $group: {
-          _id: '$airline_id',
-          avg_duration_minutes: { $avg: { $divide: [{ $subtract: ['$arrival', '$departure'] }, 60000] } }
-        }
-      },
-      { $limit: 10000 }
-    ]).toArray();
-  }
 ];
 
 const inserts = [
@@ -29,40 +17,15 @@ const inserts = [
     // Simple insert: Insert a new passenger
     return db.collection('passenger').insertOne({ passportno: 'XY123456', firstname: 'Bob', lastname: 'Johnson' });
   },
-  async (db) => {
-    // Advanced insert: Insert a new booking for a specific flight and passenger
-    const flight = await db.collection('flight').findOne({ flightno: 'ABC123' }, { projection: { flight_id: 1 } });
-    const passenger = await db.collection('passenger').findOne({ firstname: 'Alice', lastname: 'Smith' }, { projection: { passenger_id: 1 } });
-
-    if (flight && passenger) {
-      return db.collection('booking').insertOne({
-        flight_id: flight.flight_id,
-        seat: 'B3',
-        passenger_id: passenger.passenger_id,
-        price: 250.00
-      });
-    }
-  }
 ];
 
 const updates = [
   async (db) => {
-    // Simple update: Delay departure by one hour for flights after a certain date
+    // Simple update: Set the departure time of all flights to a fixed value
     return db.collection('flight').updateMany(
-      { departure: { $gt: new Date('2015-05-10') } },
-      { $inc: { departure: 3600000 } } // Add one hour (3600000 ms) to the departure time
+      {},
+      { $set: { departure: new Date('2023-01-01T00:00:00Z') } }
     );
-  },
-  async (db) => {
-    // Advanced update: Increase booking prices by 10% for flights of a specific airline
-    const spAirline = await db.collection('airline').findOne({ iata: 'SP' }, { projection: { airline_id: 1 } });
-
-    if (spAirline) {
-      return db.collection('booking').updateMany(
-        { flight_id: { $in: (await db.collection('flight').find({ airline_id: spAirline.airline_id }).project({ flight_id: 1 }).toArray()).map(f => f.flight_id) } },
-        { $mul: { price: 1.1 } }
-      );
-    }
   }
 ];
 

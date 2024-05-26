@@ -8,147 +8,85 @@ const connectionConfig = {
   password: 'root'
 };
 
+const generateRandomPassportNo = () => {
+  return 'XY' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+};
+
 const queries = [
-  `
-  SELECT a.airlinename, f.flightno, f.departure, f.arrival, ap.capacity
-  FROM flight f
-  JOIN airline a ON f.airline_id = a.airline_id
-  JOIN airplane ap ON f.airplane_id = ap.airplane_id
-  WHERE ap.capacity > 200 LIMIT 1000;
-  `,
-  `
-  SELECT airline_id, AVG(TIMESTAMPDIFF(MINUTE, departure, arrival)) AS avg_duration_minutes
-  FROM flight
-  GROUP BY airline_id LIMIT 10000;
-  `,
-  `
-  SELECT passenger.firstname, 
-       passenger.lastname, 
-       COUNT(b.booking_id) AS total_bookings
-FROM passenger
-INNER JOIN  (SELECT * FROM booking LIMIT 100000) b ON passenger.passenger_id = b.passenger_id
-WHERE b.flight_id IN (
-    SELECT flight_id FROM flight WHERE departure > '2015-05-10'
-)
-GROUP BY passenger.firstname, passenger.lastname
-ORDER BY total_bookings DESC;
-  `,
-  `
-  SELECT * 
-  FROM flight
-  WHERE flight.from = (
-      SELECT airport_id FROM airport WHERE iata = 'JFK'
-  ) LIMIT 50;
-  `,
-  `
-  SELECT p.firstname, p.lastname, COUNT(b.booking_id) AS total_bookings
-  FROM (SELECT * FROM booking LIMIT 100000) b
-  JOIN passenger p ON b.passenger_id = p.passenger_id
-  GROUP BY p.firstname, p.lastname;
-  `,
-  `
-  SELECT flightno, departure, arrival
-  FROM flight
-  WHERE DATEDIFF(arrival, departure) > 1;
-  `
+  async (connection) => {
+    // Simple query: Select all flights
+    const query = `
+      SELECT flightno, departure, arrival
+      FROM flight;
+    `;
+    return connection.execute(query);
+  }
 ];
 
 const inserts = [
-  `
-  INSERT INTO booking (flight_id, seat, passenger_id, price)
-  VALUES (
-    (SELECT flight_id FROM flight WHERE flightno = 'ABC123'),
-    'B3',
-    (SELECT passenger_id FROM passenger WHERE firstname = 'Alice' AND lastname = 'Smith'),
-    250.00
-  );
-  `,
-  `
-  INSERT INTO airplane (capacity, type_id, airline_id)
-  VALUES (200, 1, 1);
-  `,
-  `
-  INSERT INTO airport (iata, icao, name)
-  VALUES ('FRA', 'EDDF', 'Frankfurt Airport');
-  `,
-  `INSERT INTO passenger (passportno, firstname, lastname)
-  VALUES ('XY123456', 'Bob', 'Johnson');`
-]
+  async (connection) => {
+    // Simple insert: Insert a new passenger with a unique passportno
+    const passportno = generateRandomPassportNo();
+    const query = `
+      INSERT INTO passenger (passportno, firstname, lastname)
+      VALUES ('${passportno}', 'Bob', 'Johnson');
+    `;
+    return connection.execute(query);
+  }
+];
 
 const updates = [
-  `
-  UPDATE flight
-  SET airplane_id = (
-    SELECT airplane_id
-    FROM airplane
-    WHERE capacity >= (
-      SELECT MAX(capacity)
-      FROM airplane
-    )
-    LIMIT 1
-  )
-  WHERE departure > '2015-05-10';
-  `,
-  `
-  UPDATE booking
-  SET price = price * 1.1
-  WHERE flight_id IN (
-    SELECT flight_id
-    FROM flight
-    WHERE airline_id = (
-      SELECT airline_id
-      FROM airline
-      WHERE iata = 'SP'
-    )
-  ) LIMIT 100000;
-  `,
-  `
-  UPDATE flight
-  SET departure = DATE_ADD(departure, INTERVAL 1 HOUR)
-  WHERE departure > '2015-05-10';
-  `,
-  `
-  UPDATE employee
-  SET emailaddress = CONCAT(firstname, '.', lastname, '@example.com')
-  WHERE emailaddress IS NULL;
-  `
+  async (connection) => {
+    // Simple update: Set the departure time of all flights to a fixed value
+    const query = `
+      UPDATE flight
+      SET departure = '2023-01-01 00:00:00';
+    `;
+    return connection.execute(query);
+  }
 ];
 
 const tableMap = {
   'select': queries,
   'insert': inserts,
   'update': updates,
-}
+};
+
+const executeOperation = async (operation, connection) => {
+  const start = new Date().getTime();
+  const [result] = await operation(connection);
+  const end = new Date().getTime();
+  return { time: end - start, result };
+};
 
 const getResults = async (req, res) => {
-  let connection;
+  const operationCount = parseInt(req.body.count) || 0;
+  const type = req.body.type;
+  const operations = tableMap[type];
 
+  const times = [];
+  const results = [];
+
+  let connection;
   try {
     connection = await mysql.createConnection(connectionConfig);
-    const operationCount = req.body.count;
-    const level = req.body.level;
-    const type = req.body.type;
-    const queries = tableMap[type].slice(...getTableIndex(type, level));
 
-    const indexes = Array.from({ length: operationCount }, (_, i) => getRandomIndex(0, queries.length));
-    const times = [];
-    for (let index of indexes) {
-      let start = new Date().getTime();
-
-      await connection.execute(queries[index]);
-      let end = new Date().getTime();
-      times.push(end - start);
+    for (let index = 0; index < operationCount; index++) {
+      const { time, result } = await executeOperation(operations[0], connection);
+      times.push(time);
+      results.push(result);
     }
+
     console.log(times);
-    res.status(200).send(times);
+    res.status(200).json(times);
   } catch (err) {
     console.error(err);
-    res.status(500).send([]);
+    res.status(500).send({ error: 'Internal Server Error' });
   } finally {
     if (connection) {
       await connection.end();
     }
   }
-}
+};
 
 module.exports = { getResults };
