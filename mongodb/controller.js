@@ -7,146 +7,30 @@ const clientOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 
 const queries = [
   async (db) => {
-    return db.collection('flight').aggregate([
-      {
-        $lookup: {
-          from: 'airline',
-          localField: 'airline_id',
-          foreignField: 'airline_id',
-          as: 'airline'
-        }
-      },
-      { $unwind: '$airline' },
-      {
-        $lookup: {
-          from: 'airplane',
-          localField: 'airplane_id',
-          foreignField: 'airplane_id',
-          as: 'airplane'
-        }
-      },
-      { $unwind: '$airplane' },
-      { $match: { 'airplane.capacity': { $gt: 200 } } },
-      { $limit: 1000 },
-      {
-        $project: {
-          airlinename: '$airline.airlinename',
-          flightno: 1,
-          departure: 1,
-          arrival: 1,
-          capacity: '$airplane.capacity'
-        }
-      }
-    ]).toArray();
+    // Simple query: Select flights with capacity greater than 200
+    return db.collection('flight').find({ capacity: { $gt: 200 } }).limit(1000).toArray();
   },
   async (db) => {
+    // Advanced query: Aggregate to find the average flight duration by airline
     return db.collection('flight').aggregate([
-      {
-        $addFields: {
-          departure: { $toDate: '$departure' },
-          arrival: { $toDate: '$arrival' }
-        }
-      },
       {
         $group: {
           _id: '$airline_id',
-          avg_duration_minutes: {
-            $avg: {
-              $divide: [
-                { $subtract: ['$arrival', '$departure'] },
-                60000
-              ]
-            }
-          }
+          avg_duration_minutes: { $avg: { $divide: [{ $subtract: ['$arrival', '$departure'] }, 60000] } }
         }
       },
       { $limit: 10000 }
-    ]).toArray();
-  },
-  async (db) => {
-    const flightIds = await db.collection('flight').find({ departure: { $gt: new Date('2015-05-10') } }).project({ flight_id: 1 }).toArray();
-    const flightIdList = flightIds.map(f => f.flight_id);
-    return db.collection('passenger').aggregate([
-      {
-        $lookup: {
-          from: 'booking',
-          localField: 'passenger_id',
-          foreignField: 'passenger_id',
-          as: 'bookings'
-        }
-      },
-      { $unwind: '$bookings' },
-      {
-        $match: {
-          'bookings.flight_id': { $in: flightIdList }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            firstname: '$firstname',
-            lastname: '$lastname'
-          },
-          total_bookings: { $sum: 1 }
-        }
-      },
-      { $sort: { total_bookings: -1 } }
-    ]).toArray();
-  },
-  async (db) => {
-    const jfkAirport = await db.collection('airport').findOne({ iata: 'JFK' }, { projection: { airport_id: 1 } });
-    return db.collection('flight').find({
-      from: jfkAirport.airport_id
-    }).limit(50).toArray();
-  },
-  async (db) => {
-    return db.collection('booking').aggregate([
-      {
-        $lookup: {
-          from: 'passenger',
-          localField: 'passenger_id',
-          foreignField: 'passenger_id',
-          as: 'passenger'
-        }
-      },
-      { $unwind: '$passenger' },
-      {
-        $group: {
-          _id: {
-            firstname: '$passenger.firstname',
-            lastname: '$passenger.lastname'
-          },
-          total_bookings: { $sum: 1 }
-        }
-      }
-    ]).toArray();
-  },
-  async (db) => {
-    return db.collection('flight').aggregate([
-      {
-        $addFields: {
-          departure: { $toDate: '$departure' },
-          arrival: { $toDate: '$arrival' }
-        }
-      },
-      {
-        $match: {
-          $expr: { $gt: [{ $subtract: ['$arrival', '$departure'] }, 86400000] } // 1 day in milliseconds
-        }
-      },
-      {
-        $project: {
-          flightno: 1,
-          departure: 1,
-          arrival: 1
-        }
-      }
     ]).toArray();
   }
 ];
 
 const inserts = [
   async (db) => {
+    // Simple insert: Insert a new passenger
+    return db.collection('passenger').insertOne({ passportno: 'XY123456', firstname: 'Bob', lastname: 'Johnson' });
+  },
+  async (db) => {
+    // Advanced insert: Insert a new booking for a specific flight and passenger
     const flight = await db.collection('flight').findOne({ flightno: 'ABC123' }, { projection: { flight_id: 1 } });
     const passenger = await db.collection('passenger').findOne({ firstname: 'Alice', lastname: 'Smith' }, { projection: { passenger_id: 1 } });
 
@@ -158,42 +42,19 @@ const inserts = [
         price: 250.00
       });
     }
-  },
-  async (db) => {
-    return db.collection('airplane').insertOne({
-      capacity: 200,
-      type_id: 1,
-      airline_id: 1
-    });
-  },
-  async (db) => {
-    return db.collection('airport').insertOne({
-      iata: 'FRA',
-      icao: 'EDDF',
-      name: 'Frankfurt Airport'
-    });
-  },
-  async (db) => {
-    return db.collection('passenger').insertOne({
-      passportno: 'XY123456',
-      firstname: 'Bob',
-      lastname: 'Johnson'
-    });
   }
 ];
 
 const updates = [
   async (db) => {
-    const maxCapacityAirplane = await db.collection('airplane').findOne({}, { sort: { capacity: -1 }, projection: { airplane_id: 1 } });
-
-    if (maxCapacityAirplane) {
-      return db.collection('flight').updateMany(
-        { departure: { $gt: new Date('2015-05-10') } },
-        { $set: { airplane_id: maxCapacityAirplane.airplane_id } }
-      );
-    }
+    // Simple update: Delay departure by one hour for flights after a certain date
+    return db.collection('flight').updateMany(
+      { departure: { $gt: new Date('2015-05-10') } },
+      { $inc: { departure: 3600000 } } // Add one hour (3600000 ms) to the departure time
+    );
   },
   async (db) => {
+    // Advanced update: Increase booking prices by 10% for flights of a specific airline
     const spAirline = await db.collection('airline').findOne({ iata: 'SP' }, { projection: { airline_id: 1 } });
 
     if (spAirline) {
@@ -202,30 +63,6 @@ const updates = [
         { $mul: { price: 1.1 } }
       );
     }
-  },
-  async (db) => {
-    return db.collection('flight').updateMany(
-      { departure: { $gt: new Date('2015-05-10') } },
-      {
-        $set: {
-          departure: {
-            $dateAdd: {
-              startDate: "$departure",
-              unit: "hour",
-              amount: 1
-            }
-          }
-        }
-      }
-    );
-  },
-  async (db) => {
-    return db.collection('employee').updateMany(
-      { emailaddress: null },
-      [
-        { $set: { emailaddress: { $concat: ['$firstname', '.', '$lastname', '@example.com'] } } }
-      ]
-    );
   }
 ];
 
@@ -243,22 +80,20 @@ const executeOperation = async (operation, db) => {
 };
 
 const getResults = async (req, res) => {
-  const operationCount = req.body.count;
-  const level = req.body.level;
+  const operationCount = parseInt(req.body.count) ?? 0;
   const type = req.body.type;
-  const operations = tableMap[type].slice(...getTableIndex(type, level));
+  const operations = tableMap[type];
 
-  const indexes = Array.from({ length: operationCount }, (_, i) => getRandomIndex(0, operations.length));
   const times = [];
   const results = [];
 
   try {
-    for (let index of indexes) {
+    for (let index = 0; index < operationCount; index++) {
       const client = new MongoClient(uri, clientOptions);
       await client.connect();
       const db = client.db(dbName);
 
-      const { time, result } = await executeOperation(operations[index], db);
+      const { time, result } = await executeOperation(operations[0], db);
       times.push(time);
       results.push(result);
 
@@ -266,10 +101,10 @@ const getResults = async (req, res) => {
     }
 
     console.log(times);
-    res.status(200).json({ times, results });
+    res.status(200).json(times);
   } catch (err) {
     console.error(err);
-    res.status(500).send([]);
+    res.status(500).send({ error: 'Internal Server Error' });
   }
 };
 
