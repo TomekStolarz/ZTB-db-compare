@@ -17,12 +17,11 @@ export class DataService {
     if (!graph.points.length) {
       return;
     }
-    this.graphs.push(graph);
+    this.graphs.unshift(graph); // Insert the new graph at the beginning
     this.graphs$.next(this.graphs);
   }
 
-  public getGraphData(formData: ChartFormData): Observable<ChartData>
-  {
+  public getGraphData(formData: ChartFormData): Observable<ChartData> {
     return this.httpClient.post<number[]>(`${this.apiUrl}/${formData.db}`, formData).pipe(
       map((times) => {
         return {

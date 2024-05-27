@@ -8,13 +8,15 @@ import { DataService } from '../data.service';
   templateUrl: './charts.component.html',
   styleUrls: ['./charts.component.scss']
 })
-export class ChartsComponent { 
+export class ChartsComponent {
   protected graphsData: Observable<any[]> = inject(DataService).graphsData.pipe(map((value) => {
     return value.map((data) => ({
       zoomEnabled: true,
       exportEnabled: true,
+      axisX: { title: 'Trial Number' },
+      axisY: { title: 'Time (ms)' },
       theme: "light2",
-      title: {text: data.title},
+      title: { text: data.title },
       data: [{
         type: 'line',
         dataPoints: data.points
