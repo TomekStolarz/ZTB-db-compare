@@ -31,7 +31,7 @@ const inserts = [
 const updates = [
   async (db, limit) => {
     // Simple update: Set the departure time of limited flights to a fixed value
-    const flights = await db.collection('flight').find({}, { projection: { _id: 1 } }).limit(limit).toArray();
+    const flights = await db.collection('flight').find({}).limit(limit).toArray();
     const flightIds = flights.map(flight => flight._id);
     return db.collection('flight').updateMany(
       { _id: { $in: flightIds } },
@@ -64,6 +64,7 @@ const getResults = async (req, res) => {
 
   try {
     for (let index = 0; index < operationCount; index++) {
+      console.log('Progress:', index + 1, '/', operationCount)
       const client = new MongoClient(uri, clientOptions);
       await client.connect();
       const db = client.db(dbName);

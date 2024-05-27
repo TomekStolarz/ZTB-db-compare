@@ -48,7 +48,12 @@ const inserts = [
       params: [p.passengerId, p.passportno, p.firstname, p.lastname]
     }));
 
-    return client.batch(queries, { prepare: true });
+    // Batch the inserts to process them sequentially in chunks
+    const batchSize = 100; // Adjust the batch size as needed
+    for (let i = 0; i < queries.length; i += batchSize) {
+      const batch = queries.slice(i, i + batchSize);
+      await client.batch(batch, { prepare: true });
+    }
   }
 ];
 
@@ -70,7 +75,7 @@ const updates = [
     }));
 
     // Batch the updates to process them sequentially in chunks
-    const batchSize = 100; // Adjust the batch size as needed
+    const batchSize = 50; // Adjust the batch size as needed
     for (let i = 0; i < queries.length; i += batchSize) {
       const batch = queries.slice(i, i + batchSize);
       await client.batch(batch, { prepare: true });
@@ -102,6 +107,7 @@ const getResults = async (req, res) => {
 
   try {
     for (let index = 0; index < operationCount; index++) {
+      console.log('Progress:', index + 1, '/', operationCount)
       const { time, result } = await executeOperation(operations[0], limit);
       times.push(time);
       results.push(result);

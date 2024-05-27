@@ -8,8 +8,9 @@ const connectionConfig = {
   password: 'root'
 };
 
+let a = Math.floor(Math.random() * 100);
 const generateRandomPassportNo = () => {
-  return '' + Math.floor(Math.random() * 10000000).toString().padStart(8, '0');
+  return 'E' + Math.floor(a++).toString().padStart(7, '0');
 };
 
 const queries = [
@@ -84,6 +85,7 @@ const getResults = async (req, res) => {
     connection = await mysql.createConnection(connectionConfig);
 
     for (let index = 0; index < operationCount; index++) {
+      console.log('Progress:', index + 1, '/', operationCount)
       const { time, result } = await executeOperation(operations[0], connection, limit);
       times.push(time);
       results.push(result);

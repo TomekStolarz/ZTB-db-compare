@@ -86,6 +86,7 @@ const getResults = async (req, res) => {
     client = await pool.connect();
 
     for (let index = 0; index < operationCount; index++) {
+      console.log('Progress:', index + 1, '/', operationCount)
       const { time, result } = await executeOperation(operations[0], client, limit);
       times.push(time);
       results.push(result);
