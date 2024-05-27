@@ -5,7 +5,7 @@ export type ChartData = {
 
 export type ChartFormData = {
     db: string
-    level: string;
+    level: number;
     type: string;
     count: number;
 }

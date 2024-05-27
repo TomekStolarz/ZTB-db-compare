@@ -19,34 +19,45 @@ const generateRandomInt = (min, max) => {
 };
 
 const queries = [
-  // Simple query: Select all flights
-  async () => {
+  // Simple query: Select all flights with a limit
+  async (limit) => {
     const query = `
       SELECT flightno, departure, arrival
-      FROM flight;
+      FROM flight
+      LIMIT ${limit};
     `;
     return client.execute(query);
   }
 ];
 
 const inserts = [
-  // Simple insert: Insert a new passenger with an integer passenger_id
-  async () => {
-    const passengerId = generateRandomInt(1, 2147483647); // Generate a random integer within the 32-bit integer range
-    const query = `
-      INSERT INTO passenger (passenger_id, passportno, firstname, lastname)
-      VALUES (${passengerId}, 'XY123456', 'Bob', 'Johnson');
-    `;
-    return client.execute(query);
+  // Insert multiple passengers based on the limit
+  async (limit) => {
+    const passengers = [];
+    for (let i = 0; i < limit; i++) {
+      const passengerId = generateRandomInt(1, 2147483647); // Generate a random integer within the 32-bit integer range
+      const passportno = `XY${generateRandomInt(100000, 999999)}`;
+      passengers.push({ passengerId, passportno, firstname: `First${i}`, lastname: `Last${i}` });
+    }
+
+    const queries = passengers.map(p => ({
+      query: `
+        INSERT INTO passenger (passenger_id, passportno, firstname, lastname)
+        VALUES (?, ?, ?, ?);
+      `,
+      params: [p.passengerId, p.passportno, p.firstname, p.lastname]
+    }));
+
+    return client.batch(queries, { prepare: true });
   }
 ];
 
 const updates = [
-  // Simple update: Set the departure time of all flights to a fixed value
-  async () => {
-    // Fetch all flight IDs to update
+  // Simple update: Set the departure time of limited flights to a fixed value
+  async (limit) => {
+    // Fetch limited flight IDs to update
     const flightIds = await client.execute(`
-      SELECT flight_id FROM flight;
+      SELECT flight_id FROM flight LIMIT ${limit};
     `);
 
     const queries = flightIds.rows.map(row => ({
@@ -73,15 +84,16 @@ const tableMap = {
   'update': updates,
 };
 
-const executeOperation = async (operation) => {
+const executeOperation = async (operation, limit) => {
   const start = new Date().getTime();
-  const result = await operation();
+  const result = await operation(limit);
   const end = new Date().getTime();
   return { time: end - start, result };
 };
 
 const getResults = async (req, res) => {
   const operationCount = parseInt(req.body.count) || 0;
+  const limit = parseInt(req.body.level) || 0; // Changed from level to limit
   const type = req.body.type;
   const operations = tableMap[type];
 
@@ -90,7 +102,7 @@ const getResults = async (req, res) => {
 
   try {
     for (let index = 0; index < operationCount; index++) {
-      const { time, result } = await executeOperation(operations[0]);
+      const { time, result } = await executeOperation(operations[0], limit);
       times.push(time);
       results.push(result);
     }

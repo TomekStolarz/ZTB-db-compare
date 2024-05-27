@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import {  NonNullableFormBuilder, Validators } from '@angular/forms';
+import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { DataService } from '../data.service';
 
 @Component({
@@ -11,28 +11,23 @@ export class DbFormComponent {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly dataService = inject(DataService);
   protected dbSelectData = [
-    { key: 'mysql', label: 'Mysql'},
-    { key: 'mongo', label: 'MongoDB'},
-    { key: 'cassandra', label: 'Cassandra'},
-    { key: 'postgres', label: 'Postgres'},
+    { key: 'mysql', label: 'Mysql' },
+    { key: 'mongo', label: 'MongoDB' },
+    { key: 'cassandra', label: 'Cassandra' },
+    { key: 'postgres', label: 'Postgres' },
   ]
 
   protected queryType = [
-    { key: 'select', label: 'SELECT'},
-    { key: 'insert', label: 'INSERT'},
-    { key: 'update', label: 'UPDATE'},
-  ]
-
-  protected queryLevel = [
-    { key: 'easy', label: 'EASY'},
-    { key: 'advanced', label: 'ADVANCED'},
+    { key: 'select', label: 'SELECT' },
+    { key: 'insert', label: 'INSERT' },
+    { key: 'update', label: 'UPDATE' },
   ]
 
   protected graphForm = this.fb.group({
     count: [1, [Validators.required, Validators.min(1)]],
     db: [this.dbSelectData[0].key, Validators.required],
     type: [this.queryType[0].key, Validators.required],
-    level: [this.queryLevel[0].key, Validators.required],
+    level: [1, [Validators.required, Validators.min(1)]],
   })
 
   protected onAddCLick(): void {

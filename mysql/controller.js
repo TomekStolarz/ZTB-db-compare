@@ -9,37 +9,48 @@ const connectionConfig = {
 };
 
 const generateRandomPassportNo = () => {
-  return 'XY' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  return '' + Math.floor(Math.random() * 10000000).toString().padStart(8, '0');
 };
 
 const queries = [
-  async (connection) => {
-    // Simple query: Select all flights
+  async (connection, limit) => {
+    // Simple query: Select all flights with a limit
     const query = `
       SELECT flightno, departure, arrival
-      FROM flight;
+      FROM flight
+      LIMIT ${limit};
     `;
     return connection.execute(query);
   }
 ];
 
 const inserts = [
-  async (connection) => {
-    // Simple insert: Insert a new passenger with a unique passportno
-    const passportno = generateRandomPassportNo();
+  async (connection, limit) => {
+    // Insert multiple passengers based on the limit
+    const passengers = [];
+    for (let i = 0; i < limit; i++) {
+      const passportno = generateRandomPassportNo();
+      passengers.push([passportno, `First${i}`, `Last${i}`]);
+    }
     const query = `
       INSERT INTO passenger (passportno, firstname, lastname)
-      VALUES ('${passportno}', 'Bob', 'Johnson');
+      VALUES ?;
     `;
-    return connection.execute(query);
+    return connection.query(query, [passengers]);
   }
 ];
 
 const updates = [
-  async (connection) => {
-    // Simple update: Set the departure time of all flights to a fixed value
+  async (connection, limit) => {
+    // Simple update: Set the departure time of limited flights to a fixed value
     const query = `
       UPDATE flight
+      JOIN (
+        SELECT flightno
+        FROM flight
+        LIMIT ${limit}
+      ) AS subquery
+      USING (flightno)
       SET departure = '2023-01-01 00:00:00';
     `;
     return connection.execute(query);
@@ -52,15 +63,16 @@ const tableMap = {
   'update': updates,
 };
 
-const executeOperation = async (operation, connection) => {
+const executeOperation = async (operation, connection, limit) => {
   const start = new Date().getTime();
-  const [result] = await operation(connection);
+  const [result] = await operation(connection, limit);
   const end = new Date().getTime();
   return { time: end - start, result };
 };
 
 const getResults = async (req, res) => {
   const operationCount = parseInt(req.body.count) || 0;
+  const limit = parseInt(req.body.level) || 0; // Changed from level to limit
   const type = req.body.type;
   const operations = tableMap[type];
 
@@ -72,7 +84,7 @@ const getResults = async (req, res) => {
     connection = await mysql.createConnection(connectionConfig);
 
     for (let index = 0; index < operationCount; index++) {
-      const { time, result } = await executeOperation(operations[0], connection);
+      const { time, result } = await executeOperation(operations[0], connection, limit);
       times.push(time);
       results.push(result);
     }

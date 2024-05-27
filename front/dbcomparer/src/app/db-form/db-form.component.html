@@ -1,25 +1,23 @@
 <div class="graph-form" [formGroup]="graphForm">
-    <mat-form-field appearance="fill">
-        <mat-label>Operation count</mat-label>
-        <input matInput formControlName="count">
-    </mat-form-field>
-    <mat-form-field appearance="fill">
-        <mat-label>Db</mat-label>
-        <mat-select formControlName="db">
-          <mat-option *ngFor="let db of dbSelectData" [value]="db.key">{{db.label}}</mat-option>
-        </mat-select>
-      </mat-form-field>
-    <mat-form-field appearance="fill">
-      <mat-label>Query type</mat-label>
-      <mat-select formControlName="type">
-        <mat-option *ngFor="let type of queryType" [value]="type.key">{{type.label}}</mat-option>
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field appearance="fill">
-        <mat-label>Query level</mat-label>
-        <mat-select formControlName="level">
-          <mat-option *ngFor="let level of queryLevel" [value]="level.key">{{level.label}}</mat-option>
-        </mat-select>
-      </mat-form-field>
-      <button mat-raised-button color="primary" (click)="onAddCLick()">Add</button>
+  <mat-form-field appearance="fill">
+    <mat-label>Operation count</mat-label>
+    <input matInput formControlName="count">
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Db</mat-label>
+    <mat-select formControlName="db">
+      <mat-option *ngFor="let db of dbSelectData" [value]="db.key">{{db.label}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Query type</mat-label>
+    <mat-select formControlName="type">
+      <mat-option *ngFor="let type of queryType" [value]="type.key">{{type.label}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="fill">
+    <mat-label>Select/Update Query Limit</mat-label>
+    <input matInput formControlName="level">
+  </mat-form-field>
+  <button mat-raised-button color="primary" (click)="onAddCLick()">Add</button>
 </div>
